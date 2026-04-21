@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PropManager KE</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f7f6f2;--surface:#fff;--surface2:#f0efe9;--border:#e2e0d8;
+  --text:#1a1a18;--muted:#6b6a64;--accent:#1d6a4a;--accent2:#e8f5ee;
+  --danger:#c0392b;--warning:#b97a00;--info:#1a4f8a;--radius:10px;
+  --sans:'Helvetica Neue',Arial,sans-serif;--font:'Georgia',serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:14px}
+#app{display:flex;height:100vh;overflow:hidden}
+
+/* ── Sidebar ── */
+.sidebar{width:230px;background:#0f3d28;color:#d4e8de;display:flex;flex-direction:column;flex-shrink:0}
+.logo{padding:18px 18px 14px;font-family:var(--font);font-size:19px;color:#fff;border-bottom:1px solid #1d5c3a}
+.logo span{display:block;font-size:11px;color:#7db899;font-family:var(--sans);margin-top:2px}
+.nav-group{padding:12px 18px 4px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#5d8a71;margin-top:4px}
+.nav-item{padding:9px 18px;cursor:pointer;display:flex;align-items:center;gap:10px;font-size:13px;border-left:3px solid transparent;transition:.12s}
+.nav-item:hover{background:#1d5c3a;color:#fff}
+.nav-item.active{background:#1d5c3a;color:#fff;border-left-color:#5dca8a}
+.nav-icon{font-size:15px;width:18px;text-align:center}
+.sidebar-foot{margin-top:auto;padding:12px 18px;font-size:11px;color:#5d8a71;border-top:1px solid #1d5c3a;display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dot.live{background:#5dca8a}.dot.demo{background:#f0ad4e}.dot.err{background:#e74c3c}
+
+/* ── Main ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:11px 22px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:600}
+.topbar-right{display:flex;gap:8px;align-items:center}
+.content{flex:1;overflow-y:auto;padding:22px}
+
+/* ── Buttons ── */
+.btn{padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:12px;font-weight:500;font-family:var(--sans);transition:.12s}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:#155c3a}
+.btn-outline{background:#fff;color:var(--text);border:1px solid var(--border)}.btn-outline:hover{background:var(--surface2)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-sm{padding:4px 9px;font-size:11px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* ── Cards / Tables ── */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-bottom:22px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:15px 17px}
+.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.stat-value{font-size:25px;font-weight:600;line-height:1}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:3px}
+.stat-card.g{border-left:3px solid var(--accent)}.stat-card.a{border-left:3px solid #c47a00}
+.stat-card.r{border-left:3px solid var(--danger)}.stat-card.b{border-left:3px solid var(--info)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:18px}
+.card-head{padding:12px 17px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.card-title{font-size:13px;font-weight:600}
+table{width:100%;border-collapse:collapse}
+th{background:var(--surface2);padding:8px 13px;text-align:left;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+td{padding:10px 13px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}tr:hover td{background:#fafaf7}
+
+/* ── Badges ── */
+.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:500}
+.bg{background:#e3f7ec;color:#0a6e35}.br{background:#fde8e8;color:#9b1c1c}
+.ba{background:#fff3cd;color:#7d5a00}.bb{background:#dbeafe;color:#1e3a8a}
+
+/* ── Modal ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:var(--radius);width:590px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 70px rgba(0,0,0,.18)}
+.modal-head{padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:1}
+.modal-head h2{font-size:15px;font-weight:600}
+.modal-body{padding:18px 22px}
+.modal-foot{padding:12px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:var(--surface)}
+.x{background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1}
+
+/* ── Forms ── */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.fg{display:flex;flex-direction:column;gap:4px;margin-bottom:13px}
+.fg label{font-size:11px;font-weight:600;color:var(--muted)}
+.fg input,.fg select,.fg textarea{border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;font-family:var(--sans);background:var(--surface);width:100%}
+.fg input:focus,.fg select:focus{outline:none;border-color:var(--accent)}
+
+/* ── Alerts ── */
+.alert{padding:10px 13px;border-radius:6px;font-size:13px;margin-bottom:14px}
+.a-ok{background:#e3f7ec;color:#0a6e35;border:1px solid #a8d8c0}
+.a-info{background:#dbeafe;color:#1e3a8a;border:1px solid #bfdbfe}
+.a-warn{background:#fff3cd;color:#7d5a00;border:1px solid #fcd34d}
+.a-err{background:#fde8e8;color:#9b1c1c;border:1px solid #fca5a5}
+
+/* ── Invoice / Receipt ── */
+.inv-box{background:var(--surface2);border-radius:var(--radius);padding:22px}
+.inv-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px}
+.inv-logo{font-family:var(--font);font-size:19px;color:var(--accent)}
+.inv-logo span{display:block;font-size:11px;font-family:var(--sans);color:var(--muted)}
+.inv-meta{text-align:right;font-size:11px;color:var(--muted)}
+.inv-meta strong{display:block;font-size:13px;color:var(--text)}
+.inv-label{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:3px}
+.inv-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}
+.inv-table th{background:var(--surface);padding:7px 11px;text-align:left;font-size:11px;color:var(--muted)}
+.inv-table td{padding:9px 11px;border-bottom:1px solid var(--border)}
+.inv-total{display:flex;justify-content:space-between;padding:10px 0;border-top:2px solid var(--accent);margin-top:6px;font-weight:600;font-size:14px}
+.mpesa-box{background:var(--accent2);border:1px solid #a8d8c0;border-radius:6px;padding:11px 13px;margin-top:12px;font-size:13px}
+.mpesa-code{font-size:17px;font-weight:700;color:var(--accent);letter-spacing:1px}
+
+/* ── Misc ── */
+.avatar{width:31px;height:31px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
+.flex{display:flex;align-items:center;gap:9px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(0,0,0,.1);border-top-color:var(--accent);border-radius:50%;animation:sp .6s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.progress{background:var(--surface2);border-radius:3px;height:6px;overflow:hidden;width:80px}
+.progress-bar{background:var(--accent);height:100%}
+.empty{text-align:center;color:var(--muted);padding:32px;font-size:13px}
+.mono{font-family:monospace;font-size:12px;background:var(--accent2);padding:2px 7px;border-radius:4px;color:var(--accent);font-weight:600}
+.search{border:1px solid var(--border);border-radius:6px;padding:6px 12px;font-size:13px;width:210px}
+.search:focus{outline:none;border-color:var(--accent)}
+</style>
+</head>
+<body>
+<div id="app">
+  <nav class="sidebar">
+    <div class="logo">PropManager KE<span>Property Management System</span></div>
+    <div class="nav-group">Main</div>
+    <div class="nav-item active" onclick="go('dashboard')"><span class="nav-icon">▦</span>Dashboard</div>
+    <div class="nav-item" onclick="go('properties')"><span class="nav-icon">⌂</span>Properties</div>
+    <div class="nav-item" onclick="go('tenants')"><span class="nav-icon">👤</span>Tenants</div>
+    <div class="nav-group">Finance</div>
+    <div class="nav-item" onclick="go('payments')"><span class="nav-icon">💳</span>M-Pesa Payments</div>
+    <div class="nav-item" onclick="go('invoices')"><span class="nav-icon">📄</span>Invoices</div>
+    <div class="nav-item" onclick="go('receipts')"><span class="nav-icon">🧾</span>Receipts</div>
+    <div class="nav-group">System</div>
+    <div class="nav-item" onclick="go('reports')"><span class="nav-icon">📊</span>Reports</div>
+    <div class="nav-item" onclick="go('settings')"><span class="nav-icon">⚙</span>Settings</div>
+    <div class="sidebar-foot">
+      <div class="dot demo" id="s-dot"></div>
+      <span id="s-label">Demo mode</span>
+    </div>
+  </nav>
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="page-title">Dashboard</div>
+      <div class="topbar-right">
+        <input class="search" type="text" placeholder="Search…" id="q" oninput="search(this.value)"/>
+        <button class="btn btn-primary" onclick="addNew()">+ Add New</button>
+      </div>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-head"><h2 id="m-title"></h2><button class="x" onclick="closeM()">×</button></div>
+    <div class="modal-body" id="m-body"></div>
+    <div class="modal-foot" id="m-foot"></div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// CONFIG  — paste your deployed server URL in Settings
+// ════════════════════════════════════════════════════════════
+const CFG = { url: localStorage.getItem('pm_url') || '' };
+
+// ════════════════════════════════════════════════════════════
+// DEMO DATA  (fallback when no server connected)
+// ════════════════════════════════════════════════════════════
+const DEMO = {
+  properties:[
+    {id:1,name:'Westlands Heights',location:'Westlands, Nairobi',type:'Apartment',units:12,occupied:10,monthly_rent:35000},
+    {id:2,name:'Kilimani Court',   location:'Kilimani, Nairobi', type:'Apartment',units:8, occupied:8, monthly_rent:42000},
+    {id:3,name:'Karen Villa',      location:'Karen, Nairobi',    type:'Townhouse', units:4, occupied:3, monthly_rent:85000},
+  ],
+  tenants:[
+    {id:1,name:'James Mwangi', phone:'0712345678',email:'james@email.com', unit:'A-101',property_id:1,properties:{name:'Westlands Heights'},rent_amount:35000,due_day:1, balance:0,    status:'paid',   lease_start:'2023-01-01',lease_end:'2025-12-31'},
+    {id:2,name:'Fatuma Hassan',phone:'0723456789',email:'fatuma@email.com',unit:'A-202',property_id:1,properties:{name:'Westlands Heights'},rent_amount:35000,due_day:1, balance:35000, status:'overdue',lease_start:'2023-03-01',lease_end:'2025-02-28'},
+    {id:3,name:'Peter Kamau',  phone:'0734567890',email:'peter@email.com', unit:'B-01', property_id:2,properties:{name:'Kilimani Court'},   rent_amount:42000,due_day:5, balance:0,    status:'paid',   lease_start:'2022-06-01',lease_end:'2024-05-31'},
+    {id:4,name:'Grace Achieng',phone:'0745678901',email:'grace@email.com', unit:'B-03', property_id:2,properties:{name:'Kilimani Court'},   rent_amount:42000,due_day:5, balance:42000, status:'pending',lease_start:'2024-01-01',lease_end:'2025-12-31'},
+    {id:5,name:'David Otieno', phone:'0756789012',email:'david@email.com', unit:'K-01', property_id:3,properties:{name:'Karen Villa'},      rent_amount:85000,due_day:1, balance:0,    status:'paid',   lease_start:'2023-09-01',lease_end:'2025-08-31'},
+  ],
+  payments:[
+    {id:1,tenant_id:1,tenants:{name:'James Mwangi',unit:'A-101',phone:'0712345678'},amount:35000,mpesa_code:'QAB7X2K9P1',payment_date:'2025-04-01',status:'confirmed',invoice_id:'INV-2504-1001'},
+    {id:2,tenant_id:3,tenants:{name:'Peter Kamau',unit:'B-01',phone:'0734567890'},  amount:42000,mpesa_code:'RBC8Y3L0Q2',payment_date:'2025-04-05',status:'confirmed',invoice_id:'INV-2504-1002'},
+    {id:3,tenant_id:5,tenants:{name:'David Otieno',unit:'K-01',phone:'0756789012'}, amount:85000,mpesa_code:'SCD9Z4M1R3',payment_date:'2025-04-01',status:'confirmed',invoice_id:'INV-2504-1003'},
+  ],
+  invoices:[
+    {id:'INV-2504-1001',tenant_id:1,tenants:{name:'James Mwangi',phone:'0712345678',unit:'A-101'},amount:35000,month:'April 2025',due_date:'2025-04-01',status:'paid',   mpesa_code:'QAB7X2K9P1',sent_date:'2025-03-28'},
+    {id:'INV-2504-1002',tenant_id:2,tenants:{name:'Fatuma Hassan',phone:'0723456789',unit:'A-202'},amount:35000,month:'April 2025',due_date:'2025-04-01',status:'overdue',mpesa_code:'',          sent_date:'2025-03-28'},
+    {id:'INV-2504-1003',tenant_id:3,tenants:{name:'Peter Kamau',phone:'0734567890',unit:'B-01'}, amount:42000,month:'April 2025',due_date:'2025-04-05',status:'paid',   mpesa_code:'RBC8Y3L0Q2',sent_date:'2025-04-01'},
+    {id:'INV-2504-1004',tenant_id:4,tenants:{name:'Grace Achieng',phone:'0745678901',unit:'B-03'},amount:42000,month:'April 2025',due_date:'2025-04-05',status:'pending', mpesa_code:'',          sent_date:'2025-04-01'},
+    {id:'INV-2504-1005',tenant_id:5,tenants:{name:'David Otieno',phone:'0756789012',unit:'K-01'}, amount:85000,month:'April 2025',due_date:'2025-04-01',status:'paid',   mpesa_code:'SCD9Z4M1R3',sent_date:'2025-03-28'},
+  ],
+  receipts:[
+    {id:'RCP-2504-1001',invoice_id:'INV-2504-1001',tenants:{name:'James Mwangi',phone:'0712345678',unit:'A-101'},payments:{mpesa_code:'QAB7X2K9P1'},amount:35000,receipt_date:'2025-04-01'},
+    {id:'RCP-2504-1002',invoice_id:'INV-2504-1002',tenants:{name:'Peter Kamau',phone:'0734567890',unit:'B-01'},  payments:{mpesa_code:'RBC8Y3L0Q2'},amount:42000,receipt_date:'2025-04-05'},
+    {id:'RCP-2504-1003',invoice_id:'INV-2504-1003',tenants:{name:'David Otieno',phone:'0756789012',unit:'K-01'},payments:{mpesa_code:'SCD9Z4M1R3'},amount:85000,receipt_date:'2025-04-01'},
+  ],
+};
+
+// ════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════
+const S = { page:'dashboard', data:{...DEMO}, online:false };
+
+// ════════════════════════════════════════════════════════════
+// API  (live) / DEMO (fallback)
+// ════════════════════════════════════════════════════════════
+async function callAPI(path, method='GET', body=null) {
+  if (!CFG.url) throw new Error('NO_SERVER');
+  const opts = { method, headers:{'Content-Type':'application/json'} };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(CFG.url + path, opts);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+async function load(endpoint, demoKey) {
+  try {
+    const d = await callAPI('/api/' + endpoint);
+    S.online = true; setStatus(true); return d;
+  } catch(e) {
+    if (e.message !== 'NO_SERVER') setStatus(false, e.message);
+    return DEMO[demoKey] || [];
+  }
+}
+
+async function refresh() {
+  S.data.properties = await load('properties','properties');
+  S.data.tenants    = await load('tenants','tenants');
+  S.data.payments   = await load('payments','payments');
+  S.data.invoices   = await load('invoices','invoices');
+  S.data.receipts   = await load('receipts','receipts');
+}
+
+function setStatus(online, err) {
+  const dot = document.getElementById('s-dot');
+  const lbl = document.getElementById('s-label');
+  if (!CFG.url) { dot.className='dot demo'; lbl.textContent='Demo mode'; }
+  else if (online) { dot.className='dot live'; lbl.textContent='Live — connected'; }
+  else { dot.className='dot err'; lbl.textContent='Server offline'; }
+}
+
+// ════════════════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════════════════
+const fmt      = n => 'KES ' + Number(n||0).toLocaleString();
+const inits    = n => (n||'?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+const acolor   = n => ['#1d6a4a','#1a4f8a','#7d5a00','#6b2fa0','#b94a3a'][(n||'').charCodeAt(0)%5];
+const today    = () => new Date().toISOString().split('T')[0];
+const monLabel = (d=new Date()) => d.toLocaleString('en-KE',{month:'long',year:'numeric'});
+const genId    = p => `${p}-${new Date().toISOString().substring(2,7).replace('-','')}-${Math.floor(Math.random()*9000)+1000}`;
+const tname    = r => r?.tenants?.name  || '—';
+const tunit    = r => r?.tenants?.unit  || r?.unit || '—';
+const tphone   = r => r?.tenants?.phone || r?.phone || '—';
+const badge    = (s) => { const m={paid:'bg',overdue:'br',pending:'ba',confirmed:'bg',inactive:'ba'}; return `<span class="badge ${m[s]||'bb'}">${s}</span>`; };
+const bar      = (v,t) => `<div class="flex" style="gap:6px"><div class="progress"><div class="progress-bar" style="width:${t?Math.round(v/t*100):0}%"></div></div><span style="font-size:11px">${t?Math.round(v/t*100):0}%</span></div>`;
+
+// ════════════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════════════
+async function go(page) {
+  S.page = page;
+  document.querySelectorAll('.nav-item').forEach(el =>
+    el.classList.toggle('active', el.getAttribute('onclick') === `go('${page}')`)
+  );
+  const titles = {dashboard:'Dashboard',properties:'Properties',tenants:'Tenants',payments:'M-Pesa Payments',invoices:'Invoices',receipts:'Receipts',reports:'Reports',settings:'Settings'};
+  document.getElementById('page-title').textContent = titles[page]||page;
+  document.getElementById('content').innerHTML = `<div style="padding:40px;text-align:center;color:var(--muted)"><div class="spin" style="margin:0 auto 12px"></div>Loading…</div>`;
+  await refresh();
+  render();
+}
+
+function render() {
+  const pages = {dashboard:pgDash,properties:pgProps,tenants:pgTenants,payments:pgPay,invoices:pgInv,receipts:pgRec,reports:pgReports,settings:pgSettings};
+  document.getElementById('content').innerHTML = (pages[S.page]||pgDash)();
+}
+
+// ════════════════════════════════════════════════════════════
+// DASHBOARD
+// ════════════════════════════════════════════════════════════
+function pgDash() {
+  const {tenants:T,payments:P,properties:Pr} = S.data;
+  const rent   = T.reduce((s,t)=>s+(t.rent_amount||0),0);
+  const coll   = P.filter(p=>p.status==='confirmed').reduce((s,p)=>s+(p.amount||0),0);
+  const units  = Pr.reduce((s,p)=>s+(p.units||0),0);
+  const occ    = Pr.reduce((s,p)=>s+(p.occupied||0),0);
+  const demo   = !CFG.url ? `<div class="alert a-warn">⚠ Demo mode — go to <strong>Settings</strong> to connect your live backend.</div>` : '';
+  return `${demo}
+  <div class="alert a-info">📅 Monthly invoices auto-send on the 28th. Next: <strong>28 ${monLabel()}</strong> — ${T.length} tenants scheduled.</div>
+  <div class="stat-grid">
+    <div class="stat-card g"><div class="stat-label">Collected (${monLabel()})</div><div class="stat-value">${fmt(coll)}</div><div class="stat-sub">of ${fmt(rent)} expected</div></div>
+    <div class="stat-card b"><div class="stat-label">Total Units</div><div class="stat-value">${units}</div><div class="stat-sub">${units?Math.round(occ/units*100):0}% occupied</div></div>
+    <div class="stat-card a"><div class="stat-label">Pending</div><div class="stat-value">${T.filter(t=>t.status==='pending').length}</div><div class="stat-sub">tenants</div></div>
+    <div class="stat-card r"><div class="stat-label">Overdue</div><div class="stat-value">${T.filter(t=>t.status==='overdue').length}</div><div class="stat-sub">${fmt(T.filter(t=>t.status==='overdue').reduce((s,t)=>s+(t.balance||0),0))}</div></div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-head"><span class="card-title">Recent Payments</span><button class="btn btn-sm btn-outline" onclick="go('payments')">All</button></div>
+      <table><thead><tr><th>Tenant</th><th>Amount</th><th>M-Pesa</th><th>Status</th></tr></thead><tbody>
+      ${P.slice(0,5).map(p=>`<tr><td>${tname(p)}</td><td>${fmt(p.amount)}</td><td>${p.mpesa_code?`<span class="mono">${p.mpesa_code}</span>`:'—'}</td><td>${badge(p.status)}</td></tr>`).join('')||`<tr><td colspan="4" class="empty">No payments yet</td></tr>`}
+      </tbody></table>
+    </div>
+    <div class="card">
+      <div class="card-head"><span class="card-title">Properties</span></div>
+      <table><thead><tr><th>Name</th><th>Units</th><th>Occupancy</th></tr></thead><tbody>
+      ${Pr.map(p=>`<tr><td><strong>${p.name}</strong><br><span style="font-size:11px;color:var(--muted)">${p.location||''}</span></td><td>${p.occupied||0}/${p.units||0}</td><td>${bar(p.occupied||0,p.units||0)}</td></tr>`).join('')}
+      </tbody></table>
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════════
+// PROPERTIES
+// ════════════════════════════════════════════════════════════
+function pgProps() {
+  return `
+  <div style="display:flex;justify-content:flex-end;margin-bottom:16px"><button class="btn btn-primary" onclick="mAddProp()">+ Add Property</button></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:15px">
+  ${S.data.properties.map(p=>`
+    <div class="card" style="padding:0">
+      <div style="padding:16px 18px;border-bottom:1px solid var(--border)">
+        <div style="font-size:14px;font-weight:600;margin-bottom:3px">${p.name}</div>
+        <div style="font-size:11px;color:var(--muted)">${p.location||''}</div>
+        <span class="badge bb" style="margin-top:5px">${p.type||'Apartment'}</span>
+      </div>
+      <div style="padding:13px 18px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><div style="font-size:11px;color:var(--muted)">Units</div><div style="font-size:21px;font-weight:600">${p.units||0}</div></div>
+        <div><div style="font-size:11px;color:var(--muted)">Occupied</div><div style="font-size:21px;font-weight:600">${p.occupied||0}</div></div>
+        <div><div style="font-size:11px;color:var(--muted)">Rent/Unit</div><div style="font-size:12px;font-weight:600;color:var(--accent)">${fmt(p.monthly_rent)}</div></div>
+        <div><div style="font-size:11px;color:var(--muted)">Vacant</div><div style="font-size:12px;font-weight:600;color:${(p.units||0)-(p.occupied||0)>0?'var(--warning)':'var(--accent)'}">${(p.units||0)-(p.occupied||0)}</div></div>
+      </div>
+      <div style="padding:10px 18px;border-top:1px solid var(--border);display:flex;gap:7px">
+        <button class="btn btn-sm btn-outline" onclick="go('tenants')">Tenants</button>
+        <button class="btn btn-sm btn-primary" onclick="doSendInvoices()">Send Invoices</button>
+        <button class="btn btn-sm btn-outline btn-danger" onclick="delProp(${p.id},'${p.name}')">Delete</button>
+      </div>
+    </div>`).join('')||`<p class="empty">No properties yet.</p>`}
+  </div>`;
+}
+
+function mAddProp() {
+  openM('Add Property',`
+    <div class="row2">
+      <div class="fg"><label>Name</label><input id="p-n" placeholder="Westlands Heights"/></div>
+      <div class="fg"><label>Type</label><select id="p-t"><option>Apartment</option><option>Townhouse</option><option>Commercial</option><option>Bungalow</option></select></div>
+    </div>
+    <div class="fg"><label>Location</label><input id="p-l" placeholder="Westlands, Nairobi"/></div>
+    <div class="row2">
+      <div class="fg"><label>Total Units</label><input type="number" id="p-u" placeholder="12"/></div>
+      <div class="fg"><label>Monthly Rent (KES)</label><input type="number" id="p-r" placeholder="35000"/></div>
+    </div>`,
+    `<button class="btn btn-outline" onclick="closeM()">Cancel</button>
+     <button class="btn btn-primary" onclick="saveProp()">Save Property</button>`
+  );
+}
+
+async function saveProp() {
+  const b = {name:$('p-n'),type:$('p-t'),location:$('p-l'),units:+($('p-u'))||0,occupied:0,monthly_rent:+($('p-r'))||0};
+  try { await callAPI('/api/properties','POST',b); toast('✅ Property saved to database!'); }
+  catch { DEMO.properties.push({id:Date.now(),...b}); toast('✅ Property added (demo).'); }
+  closeM(); render();
+}
+
+async function delProp(id, name) {
+  if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+  try { await callAPI('/api/properties/'+id,'DELETE'); toast('Deleted.'); }
+  catch { DEMO.properties = DEMO.properties.filter(p=>p.id!==id); toast('Deleted (demo).'); }
+  await refresh(); render();
+}
+
+// ════════════════════════════════════════════════════════════
+// TENANTS
+// ════════════════════════════════════════════════════════════
+function pgTenants(list) {
+  const T = list || S.data.tenants;
+  return `
+  <div class="card">
+    <div class="card-head">
+      <span class="card-title">Tenants (${T.length})</span>
+      <div style="display:flex;gap:7px">
+        <button class="btn btn-sm btn-outline" onclick="doSendInvoices()">📤 Send Invoices</button>
+        <button class="btn btn-sm btn-primary" onclick="mAddTenant()">+ Add Tenant</button>
+      </div>
+    </div>
+    <table><thead><tr><th>Tenant</th><th>Property / Unit</th><th>Phone</th><th>Rent</th><th>Balance</th><th>Status</th><th>Lease End</th><th>Actions</th></tr></thead><tbody>
+    ${T.length ? T.map(t=>{
+      const pn = t.properties?.name||'—';
+      return `<tr>
+        <td><div class="flex"><div class="avatar" style="background:${acolor(t.name)};color:#fff">${inits(t.name)}</div>
+          <div><div style="font-weight:500">${t.name}</div><div style="font-size:11px;color:var(--muted)">${t.email||'—'}</div></div></div></td>
+        <td><div>${pn}</div><div style="font-size:11px;color:var(--muted)">Unit ${t.unit||'—'}</div></td>
+        <td>${t.phone||'—'}</td>
+        <td>${fmt(t.rent_amount)}</td>
+        <td style="color:${(t.balance||0)>0?'var(--danger)':'var(--accent)'};font-weight:500">${(t.balance||0)>0?fmt(t.balance):'Clear'}</td>
+        <td>${badge(t.status||'pending')}</td>
+        <td style="font-size:11px">${t.lease_end||'—'}</td>
+        <td style="display:flex;gap:4px;flex-wrap:wrap">
+          <button class="btn btn-sm btn-primary" onclick="mAddPayment(${t.id})">+ Pay</button>
+          <button class="btn btn-sm btn-outline" onclick="viewTenantInv(${t.id})">Invoices</button>
+          <button class="btn btn-sm btn-outline" onclick="delTenant(${t.id},'${t.name}')">✕</button>
+        </td>
+      </tr>`;
+    }).join('') : `<tr><td colspan="8" class="empty">No tenants found.</td></tr>`}
+    </tbody></table>
+  </div>`;
+}
+
+function mAddTenant() {
+  const opts = S.data.properties.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  openM('Add New Tenant',`
+    <div class="row2">
+      <div class="fg"><label>Full Name</label><input id="t-n" placeholder="John Doe"/></div>
+      <div class="fg"><label>Phone (M-Pesa number)</label><input id="t-p" placeholder="07XXXXXXXX"/></div>
+    </div>
+    <div class="row2">
+      <div class="fg"><label>Email</label><input type="email" id="t-e" placeholder="john@email.com"/></div>
+      <div class="fg"><label>National ID</label><input id="t-id" placeholder="12345678"/></div>
+    </div>
+    <div class="row2">
+      <div class="fg"><label>Property</label><select id="t-pr">${opts}</select></div>
+      <div class="fg"><label>Unit Number</label><input id="t-u" placeholder="A-101"/></div>
+    </div>
+    <div class="row2">
+      <div class="fg"><label>Monthly Rent (KES)</label><input type="number" id="t-r" placeholder="35000"/></div>
+      <div class="fg"><label>Rent Due Day</label><input type="number" id="t-d" value="1" min="1" max="28"/></div>
+    </div>
+    <div class="row2">
+      <div class="fg"><label>Lease Start</label><input type="date" id="t-ls" value="${today()}"/></div>
+      <div class="fg"><label>Lease End</label><input type="date" id="t-le"/></div>
+    </div>`,
+    `<button class="btn btn-outline" onclick="closeM()">Cancel</button>
+     <button class="btn btn-primary" onclick="saveTenant()">Save & Send Welcome SMS</button>`
+  );
+}
+
+async function saveTenant() {
+  const propId = +($('t-pr'));
+  const prop   = S.data.properties.find(p=>p.id===propId);
+  const b = {name:$('t-n'),phone:$('t-p'),email:$('t-e'),national_id:$('t-id'),unit:$('t-u'),property_id:propId,property_name:prop?.name||'',rent_amount:+($('t-r'))||0,due_day:+($('t-d'))||1,balance:0,status:'pending',lease_start:$('t-ls'),lease_end:$('t-le')};
+  try { await callAPI('/api/tenants','POST',b); toast(`✅ ${b.name} added. Welcome SMS sent to ${b.phone}.`); }
+  catch { DEMO.tenants.push({id:Date.now(),...b,properties:{name:prop?.name||'—'}}); toast(`✅ Tenant added (demo).`); }
+  closeM(); await refresh(); render();
+}
+
+async function delTenant(id, name) {
+  if (!confirm(`Remove "${name}"?`)) return;
+  try { await callAPI('/api/tenants/'+id,'DELETE'); toast('Tenant removed.'); }
+  catch { DEMO.tenants = DEMO.tenants.filter(t=>t.id!==id); toast('Removed (demo).'); }
+  await refresh(); render();
+}
+
+function viewTenantInv(id) {
+  const t    = S.data.tenants.find(t=>t.id===id);
+  const invs = S.data.invoices.filter(i=>i.tenant_id===id);
+  openM(`Invoices — ${t?.name||'Tenant'}`,`
+    <table><thead><tr><th>Invoice</th><th>Month</th><th>Amount</th><th>Status</th><th>M-Pesa</th></tr></thead><tbody>
+    ${invs.length ? invs.map(i=>`<tr>
+      <td style="font-size:11px;color:var(--info);font-weight:600">${i.id}</td>
+      <td>${i.month||'—'}</td><td>${fmt(i.amount)}</td><td>${badge(i.status)}</td>
+      <td>${i.mpesa_code?`<span class="mono">${i.mpesa_code}</span>`:'—'}</td>
+    </tr>`).join('') : `<tr><td colspan="5" class="empty">No invoices.</td></tr>`}
+    </tbody></table>`,
+    `<button class="btn btn-outline" onclick="closeM()">Close</button>`
+  );
+}
+
+// ════════════════════════════════════════════════════════════
+// PAYMENTS
+// ════════════════════════════════════════════════════════════
+function pgPay() {
+  return `
+  <div class="alert a-ok">✅ When connected to your live server, M-Pesa payments auto-arrive via Daraja callbacks — no manual entry needed.</div>
+  <div class="card">
+    <div class="card-head"><span class="card-title">M-Pesa Payments (${S.data.payments.length})</span>
+      <button class="btn btn-sm btn-primary" onclick="mAddPayment()">+ Record Payment</button>
+    </div>
+    <table><thead><tr><th>Date</th><th>Tenant</th><th>Unit</th><th>Amount</th><th>M-Pesa Code</th><th>Status</th><th>Receipt</th></tr></thead><tbody>
+    ${S.data.payments.length ? S.data.payments.map(p=>`<tr>
+      <td>${p.payment_date||'—'}</td><td>${tname(p)}</td><td>${tunit(p)}</td>
+      <td><strong>${fmt(p.amount)}</strong></td>
+      <td>${p.mpesa_code?`<span class="mono">${p.mpesa_code}</span>`:'—'}</td>
+      <td>${badge(p.status)}</td>
+      <td>${p.status==='confirmed'?`<button class="btn btn-sm btn-outline" onclick="viewRcpByInv('${p.invoice_id}')">View</button>`:'—'}</td>
+    </tr>`).join('') : `<tr><td colspan="7" class="empty">No payments yet.</td></tr>`}
+    </tbody></table>
+  </div>`;
+}
+
+function mAddPayment(preselect) {
+  const opts = S.data.tenants.map(t=>`<option value="${t.id}" ${preselect===t.id?'selected':''}>${t.name} — Unit ${t.unit} (${fmt(t.rent_amount)})</option>`).join('');
+  openM('Record M-Pesa Payment',`
+    <div class="fg"><label>Tenant</label><select id="py-t">${opts}</select></div>
+    <div class="row2">
+      <div class="fg"><label>M-Pesa Code</label><input id="py-m" placeholder="QAB7X2K9P1" style="text-transform:uppercase;font-family:monospace;letter-spacing:1px"/></div>
+      <div class="fg"><label>Amount (KES)</label><input type="number" id="py-a" placeholder="35000"/></div>
+    </div>
+    <div class="fg"><label>Payment Date</label><input type="date" id="py-d" value="${today()}"/></div>
+    <div class="alert a-ok" style="margin-top:8px">📲 Receipt auto-generated and SMS sent on confirmation.</div>`,
+    `<button class="btn btn-outline" onclick="closeM()">Cancel</button>
+     <button class="btn btn-primary" onclick="savePayment()">✅ Confirm & Generate Receipt</button>`
+  );
+}
+
+async function savePayment() {
+  const tenantId = +($('py-t'));
+  const tenant   = S.data.tenants.find(t=>t.id===tenantId);
+  const mpesa    = $('py-m').toUpperCase().trim();
+  const amount   = +($('py-a'))||0;
+  const date     = $('py-d');
+  if (!mpesa) { toast('⚠ Enter M-Pesa code.'); return; }
+  if (!amount){ toast('⚠ Enter amount.'); return; }
+
+  const body = { tenant_id:tenantId, amount, mpesa_code:mpesa, payment_date:date };
+  try {
+    const r = await callAPI('/api/payments','POST',body);
+    toast(`✅ Confirmed! Receipt ${r.receiptId} generated. SMS sent to ${tenant?.phone||'tenant'}.`);
+  } catch {
+    // demo fallback
+    const iid = genId('INV'), rid = genId('RCP');
+    DEMO.payments.push({id:Date.now(),tenant_id:tenantId,tenants:{name:tenant?.name,unit:tenant?.unit,phone:tenant?.phone},amount,mpesa_code:mpesa,payment_date:date,status:'confirmed',invoice_id:iid});
+    DEMO.receipts.push({id:rid,invoice_id:iid,tenants:{name:tenant?.name,phone:tenant?.phone,unit:tenant?.unit},payments:{mpesa_code:mpesa},amount,receipt_date:date});
+    if(tenant){const nb=Math.max(0,(tenant.balance||0)-amount);tenant.balance=nb;tenant.status=nb===0?'paid':'pending';}
+    toast(`✅ Payment saved (demo). Receipt ${rid} generated.`);
+  }
+  closeM(); await refresh(); render();
+}
+
+// ════════════════════════════════════════════════════════════
+// INVOICES
+// ════════════════════════════════════════════════════════════
+function pgInv() {
+  const I = S.data.invoices;
+  return `
+  <div class="card">
+    <div class="card-head"><span class="card-title">Invoices (${I.length})</span>
+      <div style="display:flex;gap:7px">
+        <button class="btn btn-sm btn-outline" onclick="doSendInvoices()">📤 Send All SMS</button>
+        <button class="btn btn-sm btn-primary" onclick="doGenInvoices()">⚡ Generate Next Month</button>
+      </div>
+    </div>
+    <table><thead><tr><th>Invoice</th><th>Tenant</th><th>Unit</th><th>Month</th><th>Amount</th><th>Due</th><th>Status</th><th>M-Pesa</th><th></th></tr></thead><tbody>
+    ${I.length ? I.map(i=>`<tr>
+      <td style="font-size:11px;color:var(--info);font-weight:600">${i.id}</td>
+      <td>${tname(i)}</td><td>${tunit(i)}</td><td>${i.month||'—'}</td>
+      <td><strong>${fmt(i.amount)}</strong></td>
+      <td style="font-size:11px">${i.due_date||'—'}</td>
+      <td>${badge(i.status)}</td>
+      <td>${i.mpesa_code?`<span class="mono">${i.mpesa_code}</span>`:'—'}</td>
+      <td><button class="btn btn-sm btn-outline" onclick="viewInv('${i.id}')">View</button></td>
+    </tr>`).join('') : `<tr><td colspan="9" class="empty">No invoices yet.</td></tr>`}
+    </tbody></table>
+  </div>`;
+}
+
+function viewInv(id) {
+  const i = S.data.invoices.find(x=>x.id===id); if(!i)return;
+  openM(`Invoice ${i.id}`,`
+  <div class="inv-box">
+    <div class="inv-head">
+      <div class="inv-logo">PropManager KE<span>Property Management</span></div>
+      <div class="inv-meta"><strong>INVOICE</strong>${i.id}<br>${i.sent_date||''}</div>
+    </div>
+    <div class="g2" style="margin-bottom:15px">
+      <div><div class="inv-label">Billed To</div><strong>${tname(i)}</strong><br><span style="font-size:12px;color:var(--muted)">${tphone(i)}</span></div>
+      <div><div class="inv-label">Unit</div>${tunit(i)}<br><span style="font-size:12px;color:var(--muted)">${i.month||''}</span></div>
+    </div>
+    <table class="inv-table"><thead><tr><th>Description</th><th>Period</th><th>Amount</th></tr></thead>
+    <tbody><tr><td>Monthly Rent</td><td>${i.month||'—'}</td><td>${fmt(i.amount)}</td></tr></tbody></table>
+    <div class="inv-total"><span>TOTAL DUE</span><span>${fmt(i.amount)}</span></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px">Due: ${i.due_date||'—'}</div>
+    ${i.mpesa_code
+      ?`<div class="mpesa-box">✅ Paid via M-Pesa<br><span class="mpesa-code">${i.mpesa_code}</span></div>`
+      :`<div class="alert a-warn" style="margin-top:10px">⚠ Awaiting payment — Paybill: <strong>${localStorage.getItem('pm_paybill')||'XXXXXX'}</strong>, Account: <strong>${tunit(i)}</strong></div>`}
+  </div>`,
+  `<button class="btn btn-outline" onclick="closeM()">Close</button>
+   <button class="btn btn-outline" onclick="window.print()">🖨 Print</button>
+   <button class="btn btn-primary" onclick="closeM()">📤 Resend SMS</button>`);
+}
+
+async function doGenInvoices() {
+  try {
+    const r = await callAPI('/api/invoices/generate','POST');
+    toast(`⚡ ${r.created} invoices generated for ${monLabel()}.`);
+    await refresh(); render();
+  } catch { toast('⚠ Connect your server to generate invoices.'); }
+}
+
+// ════════════════════════════════════════════════════════════
+// RECEIPTS
+// ════════════════════════════════════════════════════════════
+function pgRec() {
+  const R = S.data.receipts;
+  return `
+  <div class="card">
+    <div class="card-head"><span class="card-title">Receipts — auto-generated on M-Pesa confirmation (${R.length})</span></div>
+    <table><thead><tr><th>Receipt</th><th>Tenant</th><th>Unit</th><th>Amount</th><th>M-Pesa Code</th><th>Date</th><th>Actions</th></tr></thead><tbody>
+    ${R.length ? R.map(r=>`<tr>
+      <td style="font-size:11px;color:var(--info);font-weight:600">${r.id}</td>
+      <td>${tname(r)}</td><td>${tunit(r)}</td>
+      <td><strong>${fmt(r.amount)}</strong></td>
+      <td><span class="mono">${r.payments?.mpesa_code||r.mpesa_code||'—'}</span></td>
+      <td>${r.receipt_date||'—'}</td>
+      <td style="display:flex;gap:4px">
+        <button class="btn btn-sm btn-outline" onclick="viewRcp('${r.id}')">View</button>
+        <button class="btn btn-sm btn-outline" onclick="toast('SMS resent to ${tphone(r)}')">📤</button>
+      </td>
+    </tr>`).join('') : `<tr><td colspan="7" class="empty">Receipts appear here after payments are confirmed.</td></tr>`}
+    </tbody></table>
+  </div>`;
+}
+
+function viewRcpByInv(invoiceId) {
+  const r = S.data.receipts.find(r=>r.invoice_id===invoiceId);
+  if(r) viewRcp(r.id); else toast('Receipt not yet generated.');
+}
+
+function viewRcp(id) {
+  const r = S.data.receipts.find(x=>x.id===id); if(!r)return;
+  const mpesa = r.payments?.mpesa_code || r.mpesa_code || '—';
+  openM(`Receipt ${r.id}`,`
+  <div class="inv-box">
+    <div class="inv-head">
+      <div class="inv-logo">PropManager KE<span>Official Payment Receipt</span></div>
+      <div class="inv-meta"><strong>RECEIPT</strong>${r.id}<br>${r.receipt_date||''}</div>
+    </div>
+    <div style="background:var(--accent2);border-radius:8px;padding:16px;text-align:center;margin-bottom:15px;border:1px solid #a8d8c0">
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:5px">Payment Received</div>
+      <div style="font-size:30px;font-weight:700;color:var(--accent)">${fmt(r.amount)}</div>
+    </div>
+    <div class="g2" style="margin-bottom:13px">
+      <div><div class="inv-label">From</div><strong>${tname(r)}</strong><br><span style="font-size:12px;color:var(--muted)">${tphone(r)}</span></div>
+      <div><div class="inv-label">Unit</div>${tunit(r)}</div>
+    </div>
+    <div class="mpesa-box">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px">M-Pesa Transaction Reference</div>
+      <span class="mpesa-code">${mpesa}</span>
+      <div style="font-size:11px;color:var(--muted);margin-top:5px">Confirmed — ${r.receipt_date||'—'}</div>
+    </div>
+    <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:12px">Auto-generated by PropManager KE</div>
+  </div>`,
+  `<button class="btn btn-outline" onclick="closeM()">Close</button>
+   <button class="btn btn-outline" onclick="window.print()">🖨 Print</button>
+   <button class="btn btn-primary" onclick="closeM()">📤 Send to ${tphone(r)}</button>`);
+}
+
+// ════════════════════════════════════════════════════════════
+// REPORTS
+// ════════════════════════════════════════════════════════════
+function pgReports() {
+  const {tenants:T,payments:P,properties:Pr} = S.data;
+  const coll = P.filter(p=>p.status==='confirmed').reduce((s,p)=>s+(p.amount||0),0);
+  const tot  = T.reduce((s,t)=>s+(t.rent_amount||0),0);
+  return `
+  <div class="stat-grid">
+    <div class="stat-card g"><div class="stat-label">Collected</div><div class="stat-value">${fmt(coll)}</div></div>
+    <div class="stat-card a"><div class="stat-label">Outstanding</div><div class="stat-value">${fmt(tot-coll)}</div></div>
+    <div class="stat-card b"><div class="stat-label">Collection Rate</div><div class="stat-value">${tot?Math.round(coll/tot*100):0}%</div></div>
+    <div class="stat-card r"><div class="stat-label">Overdue</div><div class="stat-value">${T.filter(t=>t.status==='overdue').length}</div></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><span class="card-title">Collection by Property</span></div>
+    <table><thead><tr><th>Property</th><th>Tenants</th><th>Expected</th><th>Collected</th><th>Outstanding</th><th>Rate</th></tr></thead><tbody>
+    ${Pr.map(p=>{
+      const pts=T.filter(t=>t.property_id===p.id);
+      const exp=pts.reduce((s,t)=>s+(t.rent_amount||0),0);
+      const col=pts.filter(t=>t.status==='paid').reduce((s,t)=>s+(t.rent_amount||0),0);
+      const rate=exp?Math.round(col/exp*100):0;
+      return `<tr>
+        <td><strong>${p.name}</strong><div style="font-size:11px;color:var(--muted)">${p.location||''}</div></td>
+        <td>${pts.length}</td><td>${fmt(exp)}</td>
+        <td style="color:var(--accent);font-weight:500">${fmt(col)}</td>
+        <td style="color:${exp-col>0?'var(--danger)':'var(--accent)'};font-weight:500">${fmt(exp-col)}</td>
+        <td>${bar(col,exp)}</td>
+      </tr>`;
+    }).join('')}
+    </tbody></table>
+  </div>
+  <div class="card">
+    <div class="card-head"><span class="card-title">Tenant Payment Status</span></div>
+    <table><thead><tr><th>Tenant</th><th>Property / Unit</th><th>Rent</th><th>Balance</th><th>Status</th></tr></thead><tbody>
+    ${T.map(t=>`<tr>
+      <td>${t.name}</td>
+      <td>${t.properties?.name||'—'} — ${t.unit||'—'}</td>
+      <td>${fmt(t.rent_amount)}</td>
+      <td style="color:${(t.balance||0)>0?'var(--danger)':'var(--accent)'};font-weight:500">${(t.balance||0)>0?fmt(t.balance):'—'}</td>
+      <td>${badge(t.status)}</td>
+    </tr>`).join('')}
+    </tbody></table>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════════
+// SETTINGS
+// ════════════════════════════════════════════════════════════
+function pgSettings() {
+  return `
+  <div class="card" style="padding:22px;max-width:620px">
+    <h3 style="font-size:14px;font-weight:600;color:var(--accent);margin-bottom:14px">🔗 Backend Server URL</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Enter your deployed Railway / Render server URL. Leave blank to use demo data.</p>
+    <div class="fg"><label>Server URL</label><input type="url" id="cfg-url" value="${localStorage.getItem('pm_url')||''}" placeholder="https://propmanager-ke.railway.app" style="font-family:monospace"/></div>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <button class="btn btn-primary" onclick="testConn()">Test & Save Connection</button>
+      <button class="btn btn-outline" onclick="clearConn()">Clear (use demo)</button>
+    </div>
+    <div id="cfg-st"></div>
+  </div>
+
+  <div class="card" style="padding:22px;max-width:620px;margin-top:16px">
+    <h3 style="font-size:14px;font-weight:600;color:var(--accent);margin-bottom:14px">📱 M-Pesa Paybill</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Shown on invoices sent to tenants.</p>
+    <div class="fg"><label>Paybill / Till Number</label><input id="cfg-pb" value="${localStorage.getItem('pm_paybill')||''}" placeholder="174379" style="font-family:monospace;max-width:200px"/></div>
+    <button class="btn btn-primary" onclick="localStorage.setItem('pm_paybill',$('cfg-pb'));toast('✅ Paybill saved.')">Save Paybill</button>
+  </div>
+
+  <div class="card" style="padding:22px;max-width:620px;margin-top:16px">
+    <h3 style="font-size:14px;font-weight:600;color:var(--accent);margin-bottom:14px">⚡ Daraja & SMS Actions</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Run these after deploying your backend server.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="regDaraja()" ${!CFG.url?'disabled':''}>Register Daraja URLs</button>
+      <button class="btn btn-outline" onclick="doSendInvoices()" ${!CFG.url?'disabled':''}>📤 Send Monthly Invoices</button>
+    </div>
+    ${!CFG.url?'<p style="font-size:12px;color:var(--muted);margin-top:8px">Connect your server first.</p>':''}
+  </div>
+
+  <div class="card" style="padding:22px;max-width:620px;margin-top:16px">
+    <h3 style="font-size:14px;font-weight:600;color:var(--accent);margin-bottom:10px">📦 Which backend are you using?</h3>
+    <table style="font-size:13px">
+      <tr><td style="padding:5px 10px;font-weight:500">Supabase</td><td style="padding:5px 10px;color:var(--muted)">Use <code>supabase/server.js</code> + run <code>schema.sql</code> in Supabase SQL editor</td></tr>
+      <tr><td style="padding:5px 10px;font-weight:500">Firebase</td><td style="padding:5px 10px;color:var(--muted)">Use <code>firebase/server.js</code> + add <code>serviceAccountKey.json</code></td></tr>
+      <tr><td style="padding:5px 10px;font-weight:500">SQLite</td><td style="padding:5px 10px;color:var(--muted)">Use <code>sqlite/server.js</code> — DB auto-created, no setup needed</td></tr>
+    </table>
+    <p style="font-size:12px;color:var(--muted);margin-top:10px">All three use the same API endpoints — this HTML works with any of them unchanged.</p>
+  </div>`;
+}
+
+async function testConn() {
+  const url = document.getElementById('cfg-url').value.trim().replace(/\/$/,'');
+  const st  = document.getElementById('cfg-st');
+  st.innerHTML = '<div class="alert a-warn">Testing…</div>';
+  try {
+    const r = await fetch(url+'/');
+    if (r.ok) {
+      CFG.url = url; localStorage.setItem('pm_url', url); setStatus(true);
+      st.innerHTML = '<div class="alert a-ok">✅ Connected! Server is live and responding.</div>';
+    } else {
+      st.innerHTML = `<div class="alert a-err">❌ Server returned HTTP ${r.status}.</div>`;
+    }
+  } catch(e) {
+    st.innerHTML = `<div class="alert a-err">❌ Cannot reach server: ${e.message}</div>`;
+  }
+}
+
+function clearConn() {
+  CFG.url=''; localStorage.removeItem('pm_url'); setStatus(false);
+  toast('Cleared — running in demo mode.'); render();
+}
+
+async function regDaraja() {
+  try {
+    const r = await callAPI('/register-urls','POST');
+    toast('✅ ' + (r.message||'Daraja URLs registered with Safaricom!'));
+  } catch(e) { toast('❌ ' + e.message); }
+}
+
+async function doSendInvoices() {
+  if (!CFG.url) { toast('⚠ Connect your server in Settings to send real SMS.'); return; }
+  try {
+    const r = await callAPI('/api/send-invoices','POST');
+    toast(`✅ ${r.message||'Invoices sent!'}`);
+  } catch(e) { toast('❌ ' + e.message); }
+}
+
+// ════════════════════════════════════════════════════════════
+// MODAL + UTILS
+// ════════════════════════════════════════════════════════════
+function openM(title, body, foot) {
+  document.getElementById('m-title').textContent = title;
+  document.getElementById('m-body').innerHTML    = body;
+  document.getElementById('m-foot').innerHTML    = foot||'';
+  document.getElementById('overlay').classList.add('open');
+}
+function closeM() { document.getElementById('overlay').classList.remove('open'); }
+document.getElementById('overlay').addEventListener('click', e => { if(e.target.id==='overlay') closeM(); });
+
+function addNew() {
+  const m={tenants:mAddTenant,payments:mAddPayment,properties:mAddProp,settings:()=>{}};
+  (m[S.page]||mAddTenant)();
+}
+
+function search(q) {
+  if (!q) { render(); return; }
+  if (S.page==='tenants') {
+    const res = S.data.tenants.filter(t =>
+      (t.name||'').toLowerCase().includes(q.toLowerCase()) ||
+      (t.phone||'').includes(q) || (t.unit||'').toLowerCase().includes(q.toLowerCase())
+    );
+    document.getElementById('content').innerHTML = pgTenants(res);
+  }
+}
+
+function $(id) { const el=document.getElementById(id); return el?(el.tagName==='SELECT'?el.value:el.value):''; }
+
+function toast(msg) {
+  document.querySelectorAll('.toast').forEach(e=>e.remove());
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.style.cssText = 'position:fixed;top:16px;right:22px;background:#0f3d28;color:#d4e8de;padding:13px 18px;border-radius:8px;font-size:13px;z-index:9999;max-width:420px;box-shadow:0 4px 20px rgba(0,0,0,.25);line-height:1.5';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 5000);
+}
+
+// ════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════
+setStatus(false);
+go('dashboard');
+</script>
+</body>
+</html>
